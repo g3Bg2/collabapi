@@ -4,13 +4,10 @@ import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Event } from './entities/events.entity';
+import { AuditLog } from './entities/audit-log.entity';
 import { ConfigModule } from '@nestjs/config';
 import { EventsModule } from './events/events.module';
-import { EventsController } from './events/events.controller';
-import { EventsService } from './events/events.service';
 import { UserModule } from './user/user.module';
-import { UserService } from './user/user.service';
-import { UserController } from './user/user.controller';
 
 @Module({
   imports: [
@@ -24,13 +21,15 @@ import { UserController } from './user/user.controller';
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
-      entities: [User, Event],
-      synchronize: true,
+      entities: [User, Event, AuditLog],
+      synchronize: false,
+      migrations: ['dist/migrations/*.js'],
+      migrationsRun: false,
     }),
     EventsModule,
     UserModule,
   ],
-  controllers: [AppController, EventsController, UserController],
-  providers: [AppService, EventsService, UserService],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}
