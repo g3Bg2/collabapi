@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, In } from 'typeorm';
 import { Event, EventStatus } from '../entities/events.entity';
@@ -161,6 +161,35 @@ export class EventsService {
     );
 
     return { merged: mergedEvents, auditLogs, summaries };
+  }
+
+  // --- Batch Create ---
+
+  async batchCreateEvents(
+    createEventDtos: CreateEventDto[],
+  ): Promise<Event[]> {
+    if (createEventDtos.length > 500) {
+      throw new BadRequestException('Batch size cannot exceed 500 events');
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      const events: Event[] = [];
+
+      for (const dto of createEventDtos) {
+        const { inviteeIds, ...eventData } = dto;
+        const event = manager.create(Event, eventData);
+
+        if (inviteeIds?.length) {
+          event.invitees = await manager.findBy(User, {
+            id: In(inviteeIds),
+          });
+        }
+
+        events.push(event);
+      }
+
+      return manager.save(Event, events);
+    });
   }
 
   // --- Private Helpers ---

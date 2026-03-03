@@ -47,4 +47,9 @@ export class EventsController {
   getConflicts(@Param('userId') userId: string) {
     return this.eventsService.getConflicts(userId);
   }
+
+  @Post('batch')
+  batchCreateEvents(@Body() events: CreateEventDto[]) {
+    return this.eventsService.batchCreateEvents(events);
+  }
 }
