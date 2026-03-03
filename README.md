@@ -56,6 +56,58 @@ docker run -p 3000:3000 collabapi
 
 ---
 
+## 🧠 Merge Algorithm & Conflict Detection Logic
+
+### Conflict Detection
+
+**Algorithm: Interval Overlap Detection**
+
+Two events overlap if:
+```
+event_a.startTime < event_b.endTime AND event_b.startTime < event_a.endTime
+```
+
+**Time Complexity**: O(n²) where n = number of events for a user  
+
+### Merge Strategy
+
+**Step 1: Cluster Overlapping Events**
+- Sort events by `startTime`
+- Group consecutive overlapping events into "clusters"
+- Each cluster contains 2+ overlapping events (non-overlapping events stay separate)
+
+**Step 2: Combine Event Metadata**
+
+For each cluster:
+
+| Field | Merge Strategy |
+|-------|--------|
+| `startTime` | Earliest start of all events |
+| `endTime` | Latest end of all events |
+| `title` | Concatenate with " + " separator (e.g., "Meeting 1 + Meeting 2") |
+| `description` | Combine with " \| " separator, filter out empty ones |
+| `status` | Highest priority: COMPLETED > IN_PROGRESS > TODO > CANCELED |
+| `invitees` | Union of all invitees across events |
+| `mergedFrom` | Array of original event IDs |
+
+**Step 3: Transactional Merge**
+- All merge operations happen within a **database transaction**
+- Create merged event → Save to DB → Log audit trail → Delete old events
+- If any step fails, entire transaction rolls back
+- No orphaned events or partial states
+
+**Step 4: AI Summarization (Post-Transaction)**
+- After merge commits, call AI service to summarize
+- Runs in parallel for all merged events using `Promise.all()`
+- Results cached in Redis with 1-hour TTL
+
+---
+
+## 🤖 AI Tools Used
+
+- **GitHub Copilot**: For code assitance and boilerplate generation
+- **Claude**: For entity relationship design and API structuring
+
 ### Environment Variables
 ```
 DB_HOST=localhost
