@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, In } from 'typeorm';
 import { Event, EventStatus } from '../entities/events.entity';
@@ -10,6 +6,7 @@ import { AuditLog } from '../entities/audit-log.entity';
 import { User } from '../entities/user.entity';
 import { CreateEventDto } from '../dto/createEventDto';
 import { UpdateEventDto } from '../dto/updateEventDto';
+import { AiService } from '../ai/ai.service';
 
 @Injectable()
 export class EventsService {
@@ -19,6 +16,7 @@ export class EventsService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly dataSource: DataSource,
+    private readonly aiService: AiService,
   ) {}
 
   async createEvent(createEventDto: CreateEventDto): Promise<Event> {
@@ -95,9 +93,11 @@ export class EventsService {
 
   // --- Merge All Overlapping Events ---
 
-  async mergeAllEvents(
-    userId: string,
-  ): Promise<{ merged: Event[]; auditLogs: AuditLog[] }> {
+  async mergeAllEvents(userId: string): Promise<{
+    merged: Event[];
+    auditLogs: AuditLog[];
+    summaries: Record<string, string>;
+  }> {
     const events = await this.eventRepository
       .createQueryBuilder('event')
       .innerJoinAndSelect('event.invitees', 'user', 'user.id = :userId', {
@@ -112,18 +112,21 @@ export class EventsService {
     // Only process clusters with 2+ events
     const mergeClusters = clusters.filter((c) => c.length > 1);
     if (mergeClusters.length === 0) {
-      return { merged: [], auditLogs: [] };
+      return { merged: [], auditLogs: [], summaries: {} };
     }
 
     const mergedEvents: Event[] = [];
     const auditLogs: AuditLog[] = [];
+    const clusterTitles: Map<string, string[]> = new Map();
 
     await this.dataSource.transaction(async (manager) => {
       for (const cluster of mergeClusters) {
         const mergedEvent = this.combineEvents(cluster);
+        const titles = cluster.map((e) => e.title);
 
         const saved = await manager.save(Event, mergedEvent);
         mergedEvents.push(saved);
+        clusterTitles.set(saved.id, titles);
 
         const auditLog = manager.create(AuditLog, {
           action: 'MERGE',
@@ -131,7 +134,7 @@ export class EventsService {
           newEventId: saved.id,
           userId,
           details: {
-            mergedTitles: cluster.map((e) => e.title),
+            mergedTitles: titles,
             eventCount: cluster.length,
           },
         });
@@ -144,7 +147,20 @@ export class EventsService {
       }
     });
 
-    return { merged: mergedEvents, auditLogs };
+    // Generate AI summaries for each merged event (outside transaction)
+    const summaries: Record<string, string> = {};
+    await Promise.all(
+      mergedEvents.map(async (event) => {
+        const titles = clusterTitles.get(event.id) || [];
+        summaries[event.id] = await this.aiService.summarizeMergedEvent(
+          event.id,
+          titles,
+          titles.length,
+        );
+      }),
+    );
+
+    return { merged: mergedEvents, auditLogs, summaries };
   }
 
   // --- Private Helpers ---

@@ -8,6 +8,7 @@ import { AuditLog } from './entities/audit-log.entity';
 import { ConfigModule } from '@nestjs/config';
 import { EventsModule } from './events/events.module';
 import { UserModule } from './user/user.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { UserModule } from './user/user.module';
     }),
     EventsModule,
     UserModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [AppService],

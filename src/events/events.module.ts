@@ -5,9 +5,10 @@ import { AuditLog } from '../entities/audit-log.entity';
 import { User } from '../entities/user.entity';
 import { EventsController } from './events.controller';
 import { EventsService } from './events.service';
+import { AiModule } from '../ai/ai.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Event, AuditLog, User])],
+  imports: [TypeOrmModule.forFeature([Event, AuditLog, User]), AiModule],
   controllers: [EventsController],
   providers: [EventsService],
 })
