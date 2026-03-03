@@ -8,6 +8,9 @@ import { ConfigModule } from '@nestjs/config';
 import { EventsModule } from './events/events.module';
 import { EventsController } from './events/events.controller';
 import { EventsService } from './events/events.service';
+import { UserModule } from './user/user.module';
+import { UserService } from './user/user.service';
+import { UserController } from './user/user.controller';
 
 @Module({
   imports: [
@@ -25,8 +28,9 @@ import { EventsService } from './events/events.service';
       synchronize: true,
     }),
     EventsModule,
+    UserModule,
   ],
-  controllers: [AppController, EventsController],
-  providers: [AppService, EventsService],
+  controllers: [AppController, EventsController, UserController],
+  providers: [AppService, EventsService, UserService],
 })
 export class AppModule {}

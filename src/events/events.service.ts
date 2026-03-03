@@ -40,4 +40,21 @@ Combine metadata intelligently (e.g. titles concatenated, latest status kept).
     conflictEvents(userId: number) {
         console.log(`Get all conflicting events for user with id: ${userId}`);
     }
+
+        /**
+     * Implement:
+POST /events/batch
+ Accepts up to 500 events. Must process in under 2 seconds using efficient bulk inserts.
+
+
+Use transactions to ensure consistency.
+
+
+Add an optional background worker (BullMQ or equivalent) to offload AI summarization.
+     */
+
+    batchCreateEvents(events: any[]) {
+        console.log(`Batch creating events:`, events);
+        // Here you would implement the logic to batch create events, use transactions, and offload AI summarization if needed
+    }
 }
