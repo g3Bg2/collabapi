@@ -1,0 +1,62 @@
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: collabdb
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-ppassword"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  migration:
+    build: .
+    command: sh -c "pnpm migration:run"
+    environment:
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USERNAME: root
+      DB_PASSWORD: password
+      DB_NAME: collabdb
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  api:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_USERNAME: root
+      DB_PASSWORD: password
+      DB_NAME: collabdb
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      OLLAMA_URL: http://localhost:11434
+      OLLAMA_MODEL: qwen3:4b
+      PORT: "3000"
+    depends_on:
+      migration:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
