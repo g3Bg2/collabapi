@@ -26,10 +26,7 @@ export class EventsController {
   }
 
   @Patch(':id')
-  updateEvent(
-    @Param('id') id: string,
-    @Body() updateEventDto: UpdateEventDto,
-  ) {
+  updateEvent(@Param('id') id: string, @Body() updateEventDto: UpdateEventDto) {
     return this.eventsService.updateEvent(id, updateEventDto);
   }
 

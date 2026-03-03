@@ -20,7 +20,7 @@ function makeEvent(
   e.startTime = overrides.startTime ?? new Date('2025-06-01T09:00:00Z');
   e.endTime = overrides.endTime ?? new Date('2025-06-01T10:00:00Z');
   e.invitees = overrides.invitees ?? [];
-  e.mergedFrom = overrides.mergedFrom ?? null as any;
+  e.mergedFrom = overrides.mergedFrom ?? (null as any);
   return e;
 }
 
@@ -361,9 +361,7 @@ describe('EventsService', () => {
       expect(savedEvent.status).toBe(EventStatus.IN_PROGRESS);
       expect(savedEvent.mergedFrom).toEqual(['e1', 'e2']);
       // Earliest start, latest end
-      expect(savedEvent.startTime).toEqual(
-        new Date('2025-06-01T09:00:00Z'),
-      );
+      expect(savedEvent.startTime).toEqual(new Date('2025-06-01T09:00:00Z'));
       expect(savedEvent.endTime).toEqual(new Date('2025-06-01T11:00:00Z'));
 
       // Verify audit log was created
@@ -518,7 +516,6 @@ describe('EventsService', () => {
   // ===================== Property-based Test =====================
 
   describe('overlap detection (property-based)', () => {
-
     it('merged event should always span the full range of its source events', async () => {
       const mockQB = {
         innerJoinAndSelect: jest.fn().mockReturnThis(),
@@ -532,7 +529,9 @@ describe('EventsService', () => {
         jest.clearAllMocks();
         mockManager.save.mockImplementation((_, entity) => {
           if (Array.isArray(entity)) {
-            return Promise.resolve(entity.map((e, i) => ({ ...e, id: `b-${i}` })));
+            return Promise.resolve(
+              entity.map((e, i) => ({ ...e, id: `b-${i}` })),
+            );
           }
           return Promise.resolve({ ...entity, id: `merged-${trial}` });
         });
@@ -565,9 +564,7 @@ describe('EventsService', () => {
         }
 
         // Sort by start (the service expects sorted input)
-        events.sort(
-          (a, b) => a.startTime.getTime() - b.startTime.getTime(),
-        );
+        events.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
         mockQB.getMany.mockResolvedValue(events);
 
         const result = await service.mergeAllEvents('u1');
@@ -578,9 +575,7 @@ describe('EventsService', () => {
           const earliestStart = Math.min(
             ...events.map((e) => e.startTime.getTime()),
           );
-          const latestEnd = Math.max(
-            ...events.map((e) => e.endTime.getTime()),
-          );
+          const latestEnd = Math.max(...events.map((e) => e.endTime.getTime()));
 
           // The merged event must cover the full range
           expect(savedEvent.startTime.getTime()).toBeLessThanOrEqual(

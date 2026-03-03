@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, In } from 'typeorm';
 import { Event, EventStatus } from '../entities/events.entity';
@@ -165,9 +169,7 @@ export class EventsService {
 
   // --- Batch Create ---
 
-  async batchCreateEvents(
-    createEventDtos: CreateEventDto[],
-  ): Promise<Event[]> {
+  async batchCreateEvents(createEventDtos: CreateEventDto[]): Promise<Event[]> {
     if (createEventDtos.length > 500) {
       throw new BadRequestException('Batch size cannot exceed 500 events');
     }
@@ -206,9 +208,7 @@ export class EventsService {
     for (let i = 1; i < sortedEvents.length; i++) {
       const current = sortedEvents[i];
       const lastCluster = clusters[clusters.length - 1];
-      const overlaps = lastCluster.some((e) =>
-        this.isOverlapping(e, current),
-      );
+      const overlaps = lastCluster.some((e) => this.isOverlapping(e, current));
 
       if (overlaps) {
         lastCluster.push(current);
@@ -246,8 +246,7 @@ export class EventsService {
       EventStatus.COMPLETED,
     ];
     const status = cluster.reduce((best, e) => {
-      return statusPriority.indexOf(e.status) >
-        statusPriority.indexOf(best)
+      return statusPriority.indexOf(e.status) > statusPriority.indexOf(best)
         ? e.status
         : best;
     }, cluster[0].status);

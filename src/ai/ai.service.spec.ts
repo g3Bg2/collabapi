@@ -87,11 +87,7 @@ describe('AiService', () => {
       mockRedis.get.mockResolvedValue(null);
       mockFetch.mockResolvedValue({ ok: false, status: 500 });
 
-      const result = await service.summarizeMergedEvent(
-        'event-4',
-        ['X'],
-        1,
-      );
+      const result = await service.summarizeMergedEvent('event-4', ['X'], 1);
 
       expect(result).toContain('Merged event from');
     });
