@@ -1,10 +1,10 @@
 import { EventStatus } from '../entities/events.entity';
 
-export class UpdateEventDto {
-  title?: string;
+export class CreateEventDto {
+  title: string;
   description?: string;
   status?: EventStatus;
-  startTime?: Date;
-  endTime?: Date;
+  startTime: Date;
+  endTime: Date;
   inviteeIds?: string[];
 }
