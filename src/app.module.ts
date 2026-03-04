@@ -9,6 +9,7 @@ import { ConfigModule } from '@nestjs/config';
 import { EventsModule } from './events/events.module';
 import { UserModule } from './user/user.module';
 import { AiModule } from './ai/ai.module';
+import { BullModule } from '@nestjs/bullmq';
 
 @Module({
   imports: [
@@ -26,6 +27,12 @@ import { AiModule } from './ai/ai.module';
       synchronize: false,
       migrations: ['dist/migrations/*.js'],
       migrationsRun: false,
+    }),
+    BullModule.forRoot({
+      connection: {
+        host: (process.env.REDIS_HOST || 'localhost'),
+        port: parseInt(process.env.REDIS_PORT || '6379', 10),
+      },
     }),
     EventsModule,
     UserModule,

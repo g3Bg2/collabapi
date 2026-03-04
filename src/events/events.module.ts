@@ -6,10 +6,18 @@ import { User } from '../entities/user.entity';
 import { EventsController } from './events.controller';
 import { EventsService } from './events.service';
 import { AiModule } from '../ai/ai.module';
+import { EventsProcessor } from './events.processor';
+import { BullModule } from '@nestjs/bullmq';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Event, AuditLog, User]), AiModule],
+  imports: [
+    TypeOrmModule.forFeature([Event, AuditLog, User]),
+    BullModule.registerQueue({
+      name: 'bulk-events',
+    }),
+    AiModule,
+  ],
   controllers: [EventsController],
-  providers: [EventsService],
+  providers: [EventsService, EventsProcessor],
 })
 export class EventsModule {}

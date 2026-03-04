@@ -11,6 +11,8 @@ import { User } from '../entities/user.entity';
 import { CreateEventDto } from '../dto/createEventDto';
 import { UpdateEventDto } from '../dto/updateEventDto';
 import { AiService } from '../ai/ai.service';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 @Injectable()
 export class EventsService {
@@ -21,6 +23,7 @@ export class EventsService {
     private readonly userRepository: Repository<User>,
     private readonly dataSource: DataSource,
     private readonly aiService: AiService,
+    @InjectQueue('bulk-events') private eventsQueue: Queue,
   ) {}
 
   async createEvent(createEventDto: CreateEventDto): Promise<Event> {
@@ -169,29 +172,22 @@ export class EventsService {
 
   // --- Batch Create ---
 
-  async batchCreateEvents(createEventDtos: CreateEventDto[]): Promise<Event[]> {
+  async batchCreateEvents(createEventDtos: CreateEventDto[]): Promise<{
+    message: string;
+    jobId: string | number;
+  }> {
     if (createEventDtos.length > 500) {
       throw new BadRequestException('Batch size cannot exceed 500 events');
     }
 
-    return this.dataSource.transaction(async (manager) => {
-      const events: Event[] = [];
-
-      for (const dto of createEventDtos) {
-        const { inviteeIds, ...eventData } = dto;
-        const event = manager.create(Event, eventData);
-
-        if (inviteeIds?.length) {
-          event.invitees = await manager.findBy(User, {
-            id: In(inviteeIds),
-          });
-        }
-
-        events.push(event);
-      }
-
-      return manager.save(Event, events);
+    const job = await this.eventsQueue.add('create-events', {
+      events: createEventDtos,
     });
+
+    return {
+      message: 'Batch processing started',
+      jobId: job.id ?? job.name,
+    };
   }
 
   // --- Private Helpers ---
